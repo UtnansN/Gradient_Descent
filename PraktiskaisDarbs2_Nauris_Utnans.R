@@ -2,15 +2,13 @@
 my_expr <- expression(x-2*y+x^2+2*x*y+4*y^2)
 precision <- c(0.01, 0.1)
 step_size <- c(0.01, 0.05, 0.1, 0.15, 0.22, 0.23)
-# Iterācijas VS novirze dažādu soļu izpētes modelis
-# step_size <- seq(0.002, 0.23, by = 0.002)
 
 # Optimums tiek ierakstīts šeit, lai varētu veidot diagrammas ar optimuma / iterāciju salīdzinājumu
-func_opt <- c(-1, 0.5)
+func_opt_val <- -1
 
 # Te var izvēlēties izlaist diagrammu konstruēšanu, ja tos ir jākonstruē pārāk daudz
-skip_3d_plots <- FALSE
-skip_barcharts <- FALSE
+skip_3d_plots <- TRUE
+skip_barcharts <- TRUE
 skip_iteration_deviation_plot <- FALSE
 
 # Lai pārbaudītu visas precizitātes/soļa garuma kombinācijas, vajag realizēt dekarta reizinājumu
@@ -29,7 +27,9 @@ y_deriv <- D(my_expr, 'y')
 
 # Trīs pētāmo punktu definēšana.
 x_initial <- c(-1.5, -2, 2.4)
+x_initial <- seq(-50, 50, by=0.2)
 y_initial <- c(-1, 2, 2.3)
+y_initial <- seq(-50, 50, by=0.2)
 z_initial <- mapply(my_function, x_initial, y_initial)
 
 # Grafika izveidošana (tuvināšanās trajektorijas analīzei)
@@ -92,35 +92,31 @@ for (j in seq(1, nrow(prec_step_matrix))) {
     }
   }
 }
+if (!skip_3d_plots) {
+  remove(x_plot, y_plot, z_plot)
+}
 remove(x, y, x_grad, y_grad)
 
-# Cikls iterāciju un novirzes diagrammu izveidošanai
 if (!skip_iteration_deviation_plot) {
-  # Cikls katrai precizitatei
   for (i in seq(1, length(precision))) {
     offset_ledger <- length(x_initial) * length(step_size) * (i - 1)
-    # Cikls katram koordināšu pārim
-    for (j in seq(1, length(x_initial))) {
-      x_opt_offset <- vector(length = length(step_size))
-      y_opt_offset <- vector(length = length(step_size))
-      iter_ct <- vector(length = length(step_size))
-      # Cikls lai iegūtu katru vērtību, lai to ievietotu datu vektoros
-      for (k in seq(1, length(step_size))) {
-        offset_step <- length(x_initial) * (k - 1)
-        work_ledger <- sol_ledger[[offset_ledger + offset_step + j]]
+    for (j in seq(1, length(step_size))) {
+      offset_step_size <- length(x_initial) * (j - 1)
+      
+      opt_offset <- vector(length = length(x_initial))
+      iter_ct <- vector(length = length(x_initial))
+      
+      for (k in seq(1, length(x_initial))) {
+        work_solution <- sol_ledger[[offset_ledger + offset_step_size + k]]
         
-        x_opt_offset[[k]] <- abs(work_ledger[nrow(work_ledger),1] - func_opt[1])
-        y_opt_offset[[k]] <- abs(work_ledger[nrow(work_ledger),2] - func_opt[2])
-        iter_ct[[k]] <- nrow(work_ledger) - 1
+        opt_offset[[k]] <- abs(work_solution[1, 3] - func_opt_val)
+        iter_ct[[k]] <- nrow(work_solution) - 1
       }
-      plot(x_opt_offset, iter_ct, xlab = "absoluta kluda", ylab = "iteraciju skaits", col = "black", bg = "blue",
-           pch = 21, main = paste("Iteracijas VS novirze\ne = ", 
-                                  precision[i], " , x1 = ", x_initial[j], " , x2 = ", y_initial[j]))
-      points(y_opt_offset, iter_ct, col = "black", bg = "red", pch = 21)
-      legend("topleft", legend = c("x1", "x2"), fill = c("blue", "red"), bty = "n")
+      
+      plot(iter_ct, opt_offset, xlab = "Iteraciju skaits", ylab = "novirze no minimuma", col = "black", bg = "blue",
+           pch = 21, main = paste("Iteracijas VS novirze\ne = ", precision[i], " , t = ", step_size[j]))
     }
   }
-  remove(x_opt_offset, y_opt_offset, offset_step)
 }
 
 # Cikls diagrammu izveidei pie dažādām precizitātēm
@@ -160,4 +156,4 @@ if (!skip_barcharts) {
   }
   remove(k, offset_ledger, point_names)
 }
-remove(i, j, offset, x_plot, y_plot, z_plot, skip_3d_plots, skip_barcharts, skip_iteration_deviation_plot)
+remove(i, j, offset, skip_3d_plots, skip_barcharts, skip_iteration_deviation_plot, prec_step_matrix)
