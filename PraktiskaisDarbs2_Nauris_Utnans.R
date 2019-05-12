@@ -7,8 +7,8 @@ step_size <- c(0.01, 0.05, 0.1, 0.15, 0.22, 0.23)
 func_opt_val <- -1
 
 # Te var izvēlēties izlaist diagrammu konstruēšanu, ja tos ir jākonstruē pārāk daudz
-skip_3d_plots <- TRUE
-skip_barcharts <- TRUE
+skip_3d_plots <- FALSE
+skip_barcharts <- FALSE
 skip_iteration_deviation_plot <- FALSE
 
 # Lai pārbaudītu visas precizitātes/soļa garuma kombinācijas, vajag realizēt dekarta reizinājumu
@@ -27,10 +27,19 @@ y_deriv <- D(my_expr, 'y')
 
 # Trīs pētāmo punktu definēšana.
 x_initial <- c(-1.5, -2, 2.4)
-x_initial <- seq(-50, 50, by=0.2)
 y_initial <- c(-1, 2, 2.3)
-y_initial <- seq(-50, 50, by=0.2)
 z_initial <- mapply(my_function, x_initial, y_initial)
+
+# Koda fragments, kas tika lietots liela apjoma koordinātu punktu ģenerēšanai
+# x_initial <- vector()
+# y_initial <- vector()
+# for (i in seq(-10, 10, by=0.5)) {
+#  for (j in seq(-10, 10, by=0.5)) {
+#   x_initial <- append(x_initial, i)
+#   y_initial <- append(y_initial, j)
+#  }
+# }
+# z_initial <- mapply(my_function, x_initial, y_initial)
 
 # Grafika izveidošana (tuvināšanās trajektorijas analīzei)
 if (!skip_3d_plots) {
@@ -39,6 +48,7 @@ if (!skip_3d_plots) {
   func_graph <- persp(x_plot, y_plot, z_plot, xlab = "x1", ylab = "x2", zlab = "f(x1, x2)",
                       theta = 65, phi = 25, main = "Sakuma punkti", ticktype = "detailed")
   points(trans3d(x_initial, y_initial, z_initial, pmat=func_graph), pch = 21, col="black", bg="orange")
+  remove(func_graph)
 }
 
 sol_ledger <- list()
@@ -90,6 +100,7 @@ for (j in seq(1, nrow(prec_step_matrix))) {
                    step_matrix[nrow(step_matrix),3], pmat = curr_graph), pch = 21, col ="black",bg = "blue")
     remove(curr_graph)
     }
+    remove(step_matrix)
   }
 }
 if (!skip_3d_plots) {
@@ -111,9 +122,10 @@ if (!skip_iteration_deviation_plot) {
         
         opt_offset[[k]] <- abs(work_solution[1, 3] - func_opt_val)
         iter_ct[[k]] <- nrow(work_solution) - 1
+        remove(work_solution)
       }
       
-      plot(iter_ct, opt_offset, xlab = "Iteraciju skaits", ylab = "novirze no minimuma", col = "black", bg = "blue",
+      plot(opt_offset, iter_ct, xlab = "Novirze no minimuma", ylab = "Iteraciju skaits", col = "black", bg = "blue",
            pch = 21, main = paste("Iteracijas VS novirze\ne = ", precision[i], " , t = ", step_size[j]))
     }
   }
@@ -154,6 +166,6 @@ if (!skip_barcharts) {
     par(opar)
     remove(opar)
   }
-  remove(k, offset_ledger, point_names)
+  remove(k, offset_ledger, point_names, curr_bar_plot, my_data)
 }
 remove(i, j, offset, skip_3d_plots, skip_barcharts, skip_iteration_deviation_plot, prec_step_matrix)
